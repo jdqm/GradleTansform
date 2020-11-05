@@ -2,9 +2,12 @@ package com.jdqm.plugin
 
 import com.android.build.api.transform.*
 import com.android.build.gradle.internal.pipeline.TransformManager
+import groovy.io.FileType
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassWriter
 
 class JdqmTransform extends Transform {
 
@@ -55,7 +58,7 @@ class JdqmTransform extends Transform {
         println()
         println("******************************************************************************")
         println("******                                                                  ******")
-        println("******                欢迎使用 Jdqm Transform 编译插件 V1.0           ******")
+        println("******                欢迎使用 Jdqm Transform 编译插件 V1.0.0           ******")
         println("******                                                                  ******")
         println("******************************************************************************")
         println()
@@ -112,8 +115,33 @@ class JdqmTransform extends Transform {
         )
 
         // TODO do some transform
+        if (directoryInput.file.isDirectory()) {
+            directoryInput.file.eachFileRecurse(FileType.FILES) {
+                transformClassFile(it)
+            }
+        } else {
+            transformClassFile(file)
+        }
 
         // 将 input 的目录复制到 output 指定目录
         FileUtils.copyDirectory(directoryInput.getFile(), dest)
+    }
+
+    static void transformClassFile(File file) {
+        if (!file.getName().endsWith("Activity.class")) {
+            return
+        }
+        try {
+            ClassReader classReader = new ClassReader(file.bytes)
+            ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_MAXS)
+            JdqmVisitor classVisitor = new JdqmVisitor(classWriter, file.name.substring(0, file.name.indexOf(".")))
+            classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
+            byte[] code = classWriter.toByteArray()
+            FileOutputStream fos = new FileOutputStream(file.parentFile.absolutePath + File.separator + file.name)
+            fos.write(code)
+            fos.close()
+        } catch (Exception e) {
+            e.printStackTrace()
+        }
     }
 }

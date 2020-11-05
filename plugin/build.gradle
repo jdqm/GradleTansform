@@ -4,7 +4,7 @@ dependencies {
     implementation gradleApi() //gradle sdk
     implementation localGroovy() //groovy sdk
 
-    implementation 'com.android.tools.build:gradle:3.4.1'
+    implementation 'com.android.tools.build:gradle:4.1.0'
 }
 repositories {
     jcenter()
